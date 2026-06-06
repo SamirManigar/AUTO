@@ -20,7 +20,7 @@ export default async function CompilationPage({ params }: { params: Promise<{ id
     ORDER BY c.rank_number DESC
   `;
 
-  const clips: ClipData[] = rawClips.map(c => ({
+  const clips: ClipData[] = rawClips.map((c: any) => ({
     videoId: c.video_id,
     youtubeId: c.youtube_id,
     startTime: c.start_time,

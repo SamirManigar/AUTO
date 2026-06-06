@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     `;
 
     // Map database clips to internal ClipData format
-    const dbClips = clipsData.map((c) => ({
+    const dbClips = clipsData.map((c: any) => ({
       videoId: c.video_id,
       youtubeId: c.youtube_id,
       startTime: parseFloat(c.start_time),

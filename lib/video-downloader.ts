@@ -33,7 +33,7 @@ export async function downloadYouTubeClip(youtubeId: string): Promise<{ localPat
   try {
     const args = [
       url,
-      "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+      "-f", "bv*+ba/b",
       "--merge-output-format", "mp4",
       "-o", localPath,
       "--no-warnings",

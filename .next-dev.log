@@ -1,0 +1,34 @@
+
+> short-rank-curator@0.1.0 dev
+> next dev --port 3000
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.45:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling /category/[slug] ...
+ ✓ Compiled /category/[slug] in 2.8s (661 modules)
+ GET /category/funniest 200 in 5332ms
+ GET /category/funniest 200 in 637ms
+   Reload env: .env.local
+ ✓ Compiled in 355ms (260 modules)
+   Reload env: .env.local
+ ✓ Compiled in 183ms (246 modules)
+ ✓ Compiled in 123ms (246 modules)
+ ✓ Compiled in 109ms (246 modules)
+ ○ Compiling /category/[slug] ...
+ ✓ Compiled /category/[slug] in 730ms (401 modules)
+ GET /category/funniest 200 in 1921ms
+ ○ Compiling / ...
+ ✓ Compiled / in 720ms (710 modules)
+ GET / 200 in 905ms
+ GET / 200 in 175ms
+ GET /category/funniest 200 in 601ms
+ ✓ Compiled in 291ms (710 modules)
+ GET /category/funniest 200 in 444ms
+ ✓ Compiled in 638ms (710 modules)
+ GET /category/funniest 200 in 236ms
+[?25h

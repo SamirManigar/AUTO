@@ -36,7 +36,8 @@ export async function downloadYouTubeClip(youtubeId: string): Promise<{ localPat
       "--merge-output-format", "mp4",
       "-o", localPath,
       "--no-warnings",
-      "--prefer-free-formats"
+      "--prefer-free-formats",
+      "--extractor-args", "youtube:player_client=ios,android,web"
     ];
 
     // If running on a cloud server, YouTube will block the IP. 

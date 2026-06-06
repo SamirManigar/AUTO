@@ -1,11 +1,14 @@
 // scripts/migrate.mjs
 // Run with: npm run migrate
-// Requires SUPABASE_ACCESS_TOKEN in .env.local (one-time setup).
-// Get yours at: https://supabase.com/dashboard/account/tokens
+// Automatically applies db/schema.sql to your Neon database.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { Client, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+
+neonConfig.webSocketConstructor = ws;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -34,58 +37,27 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-const accessToken = env.SUPABASE_ACCESS_TOKEN;
+const databaseUrl = env.DATABASE_URL;
 
-if (!supabaseUrl) {
-  console.error("❌  NEXT_PUBLIC_SUPABASE_URL not found in .env.local");
+if (!databaseUrl) {
+  console.error("❌  DATABASE_URL not found in .env.local");
   process.exit(1);
 }
 
-if (!accessToken) {
-  console.error(`
-❌  SUPABASE_ACCESS_TOKEN is missing from .env.local
+const sqlText = readFileSync(resolve(root, "db", "schema.sql"), "utf8");
 
-To get your token:
-  1. Go to https://supabase.com/dashboard/account/tokens
-  2. Click "Generate new token" → give it any name
-  3. Copy the token and add this line to your .env.local:
+console.log(`🔌  Applying schema to Neon database...`);
 
-     SUPABASE_ACCESS_TOKEN="your-token-here"
+const client = new Client({ connectionString: databaseUrl });
 
-  4. Re-run: npm run migrate
-`);
+try {
+  await client.connect();
+  // Using the pg-compatible Client allows executing raw multi-statement SQL strings
+  await client.query(sqlText);
+  console.log("✅  schema.sql applied — tables, constraints, and functions are all set.");
+} catch (err) {
+  console.error("❌  Migration failed:", err.message);
   process.exit(1);
-}
-
-const refMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
-if (!refMatch) {
-  console.error("❌  Could not parse project ref from NEXT_PUBLIC_SUPABASE_URL");
-  process.exit(1);
-}
-const projectRef = refMatch[1];
-
-const sql = readFileSync(resolve(root, "supabase", "schema.sql"), "utf8");
-
-console.log(`🔌  Applying schema to project: ${projectRef}`);
-
-const response = await fetch(
-  `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ query: sql }),
-  }
-);
-
-const body = await response.json().catch(() => ({}));
-
-if (response.ok) {
-  console.log("✅  schema.sql applied — tables, indexes, triggers, RLS policies and grants are all set.");
-} else {
-  console.error(`❌  Migration failed (${response.status}):`, JSON.stringify(body, null, 2));
-  process.exit(1);
+} finally {
+  await client.end();
 }

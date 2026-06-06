@@ -1,5 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 
-// Next.js statically evaluates modules during build time. 
-// If we throw here immediately, the build crashes if the env var isn't present during the build step.
-export const sql = neon(process.env.DATABASE_URL || "postgresql://dummy@localhost/dummy");
+// Neon HTTP client — designed for serverless, no pool management needed
+// Creates a single lazy connection that is safely reused across the module lifecycle
+const connectionString = process.env.DATABASE_URL || "";
+
+export const sql = neon(connectionString);

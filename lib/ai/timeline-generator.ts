@@ -244,16 +244,76 @@ async function generateWithGroq(rawVideo: RawYouTubeVideoData): Promise<Generate
   return validateTimelineOrdering(parsed, rawVideo.durationSeconds);
 }
 
-// ─── Primary export ───────────────────────────────────────────────────────────
-//
-// Currently: Groq text (Tier 1) only.
-// TODO Tier 2: add frame extraction (ytdl-core + ffmpeg) then call a vision
-// model here when frameBase64Images are provided.
-
 export async function generateTimelineFromYouTubeData(
   rawVideo: RawYouTubeVideoData,
 ): Promise<GeneratedTimelinePayload> {
-  return generateWithGroq(rawVideo);
+  const category = "uncategorized"; // We don't have the exact slug here, but it gets overridden in the ingest action anyway.
+  
+  try {
+    if (process.env.GROQ_API_KEY) {
+      return await generateWithGroq(rawVideo);
+    }
+  } catch (err: any) {
+    console.warn(`[timeline-generator] Groq generation failed: ${err.message}. Trying OpenRouter...`);
+  }
+
+  try {
+    if (process.env.OPENROUTER_API_KEY) {
+      return await generateWithOpenRouter(rawVideo);
+    }
+  } catch (err: any) {
+    console.warn(`[timeline-generator] OpenRouter generation failed: ${err.message}. Using deterministic fallback...`);
+  }
+
+  console.warn(`[timeline-generator] Falling back to deterministic timeline generation.`);
+  return makeFallbackTimeline(rawVideo, category);
+}
+
+const OPENROUTER_DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free";
+
+async function generateWithOpenRouter(rawVideo: RawYouTubeVideoData): Promise<GeneratedTimelinePayload> {
+  const apiKey = requireEnv("OPENROUTER_API_KEY");
+  const model = process.env.OPENROUTER_MODEL ?? OPENROUTER_DEFAULT_MODEL;
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.35,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: TIMELINE_SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: JSON.stringify({
+            youtubeId: rawVideo.youtubeId,
+            title: rawVideo.title,
+            description: rawVideo.description,
+            tags: rawVideo.tags,
+            durationSeconds: rawVideo.durationSeconds,
+            viewCount: rawVideo.viewCount,
+            likeCount: rawVideo.likeCount,
+            commentCount: rawVideo.commentCount,
+            subtitles: rawVideo.subtitles ?? null,
+          }),
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenRouter request failed: ${body}`);
+  }
+
+  const completion = (await response.json()) as ChatCompletion;
+  const content = extractContentFromCompletion(completion, "OpenRouter", model);
+  const parsed = timelinePayloadSchema.parse(JSON.parse(extractJsonObject(content)));
+  return validateTimelineOrdering(parsed, rawVideo.durationSeconds);
 }
 
 // ─── Fallback: deterministic timeline when all AI tiers fail ─────────────────

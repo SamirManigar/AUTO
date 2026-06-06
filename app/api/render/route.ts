@@ -49,9 +49,10 @@ export async function POST(req: Request) {
       sourceClips.map(async (c: any) => {
         await downloadYouTubeClip(c.youtubeId);
         const fileName = `${c.youtubeId}.mp4`;
+        const absolutePath = path.join(process.cwd(), "public", "downloads", fileName);
         return {
           ...c,
-          localUrl: `${baseUrl}/downloads/${fileName}`, // Let Next.js serve the file via HTTP to Chromium
+          localUrl: require("url").pathToFileURL(absolutePath).href, // Read directly from disk using file:// URI
         };
       })
     );

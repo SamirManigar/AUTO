@@ -1,11 +1,5 @@
 import { neon } from "@neondatabase/serverless";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
-export const sql = neon(requireEnv("DATABASE_URL"));
+// Next.js statically evaluates modules during build time. 
+// If we throw here immediately, the build crashes if the env var isn't present during the build step.
+export const sql = neon(process.env.DATABASE_URL || "postgresql://dummy@localhost/dummy");

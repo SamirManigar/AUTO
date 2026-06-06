@@ -31,14 +31,24 @@ export async function downloadYouTubeClip(youtubeId: string): Promise<{ localPat
   console.log(`[downloader] Starting download for ${youtubeId} using ${YTDLP_BIN}...`);
 
   try {
-    // Download the best single file with audio and video (e.g. 720p mp4)
-    await execFileAsync(YTDLP_BIN, [
+    const args = [
       url,
       "-f", "best[ext=mp4]/best",
       "-o", localPath,
       "--no-warnings",
       "--prefer-free-formats"
-    ]);
+    ];
+
+    // If running on a cloud server, YouTube will block the IP. 
+    // We can bypass this by passing a Netscape cookies.txt string via an environment variable.
+    if (process.env.YOUTUBE_COOKIES) {
+      const cookiePath = path.join(DOWNLOAD_DIR, "cookies.txt");
+      fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES, 'utf-8');
+      args.push("--cookies", cookiePath);
+    }
+
+    // Download the best single file with audio and video (e.g. 720p mp4)
+    await execFileAsync(YTDLP_BIN, args);
     
     console.log(`[downloader] Finished downloading ${youtubeId}`);
     return { localPath, localUrl };

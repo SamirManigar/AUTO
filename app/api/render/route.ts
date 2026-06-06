@@ -76,10 +76,8 @@ export async function POST(req: Request) {
     const bundled = await bundle({
       entryPoint: path.join(process.cwd(), "remotion/index.ts"),
       webpackOverride: (config) => {
-        return {
-          ...config,
-          cache: false,
-        };
+        config.cache = false;
+        return config;
       },
     });
 
@@ -95,6 +93,9 @@ export async function POST(req: Request) {
       id: "Compilation",
       inputProps,
       port: 3333,
+      chromiumOptions: {
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      }
     });
 
     // Override the static 300 frame default with our dynamically calculated length
@@ -108,6 +109,9 @@ export async function POST(req: Request) {
       inputProps,
       imageFormat: "jpeg",
       port: 3333,
+      chromiumOptions: {
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      }
     });
 
     console.log(`[render] Render complete! Saved to ${outPath}`);
